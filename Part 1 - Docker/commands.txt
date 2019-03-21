@@ -1,0 +1,79 @@
+### Docker basic usage ###
+
+- list local images
+
+docker images
+
+- list running containers
+
+docker ps
+
+- list all containers (even stopped)
+
+docker ps -a
+
+- pull image
+
+docker pull busybox
+
+- run container
+
+docker run busybox echo "Hello Docker"
+
+- run container with interactive terminal
+
+docker run -it ubuntu
+
+- execute command on running container
+
+docker exec -it ubuntu bash
+
+- build image
+
+docker build -t echo-server .
+
+- run container with port tunneling
+
+docker run --name echo-server -p 8080:8080 -d echo-server
+curl localhost:8080
+
+- show detailed info about container
+
+docker inspect echo-server
+
+- stop container
+
+docker stop echo-server
+
+- remove container
+
+docker rm echo-server
+
+- push image to docker hub
+
+docker tag echo-server landrzejewski/echo-server:v1
+docker images | head
+docker login
+docker push landrzejewski/echo-server:v1
+
+- remove image
+
+docker rmi echo-server
+
+- stop all containers
+
+docker stop $(docker ps -q)
+
+- remove all containers
+
+docker stop $(docker ps -a -q)
+
+### docker-compose basic usage ###
+
+- start all containers
+
+docker-compose up
+
+- stop all containers
+
+docker-compose down

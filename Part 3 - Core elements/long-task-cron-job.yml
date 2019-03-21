@@ -1,0 +1,17 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: long-task-cj
+spec:
+  schedule: "0,15,30,45 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app-name: long-task
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - image: landrzejewski/long-task:v1
+              name: long-task

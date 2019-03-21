@@ -1,0 +1,16 @@
+Network:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+  https://chrislovecnm.com/kubernetes/cni/choosing-a-cni-provider/
+
+HA
+  https://kubernetes.io/docs/setup/independent/high-availability/
+  https://thenewstack.io/kubernetes-high-availability-no-single-point-of-failure/
+  https://medium.com/@dominik.tornow/kubernetes-high-availability-d2c9cbbdd864
+  https://medium.com/velotio-perspectives/demystifying-high-availability-in-kubernetes-using-kubeadm-3d83ed8c458b
+  https://medium.com/devopslinks/configuring-ha-kubernetes-cluster-on-bare-metal-servers-with-kubeadm-1-2-1e79f0f7857b
+  https://blog.cloudhelix.io/using-a-private-docker-registry-with-kubernetes-f8d5f6b8f646?gi=d0589834f084
+  https://github.com/hardening-kubernetes/from-scratch/blob/master/README.md
+
+Monitoring
+  https://istio.io/
+  https://www.replex.io/blog/5-ways-to-manage-your-kubernetes-resource-usage

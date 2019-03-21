@@ -1,0 +1,14 @@
+apiVersion: ceph.rook.io/v1
+kind: CephFilesystem
+metadata:
+  name: app-fs
+spec:
+  metadataPool:
+    replicated:
+      size: 3
+  dataPools:
+    - replicated:
+        size: 3
+  metadataServer:
+    activeCount: 1
+    activeStandby: true

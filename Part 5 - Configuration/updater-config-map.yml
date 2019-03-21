@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: updater-cm
+data:
+  sleep-interval: '20'
+  INTERVAL: '10'
+  version: v1

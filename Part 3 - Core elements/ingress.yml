@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: echo-server-ing
+spec:
+  rules:
+    - http:
+        paths:
+           - path: /
+             backend:
+              serviceName: echo-service-internal-svc
+              servicePort: 80
+           - path: /abc
+             backend:
+               serviceName: echo-service-internal-svc
+               servicePort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-service-internal-svc
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+  selector:
+    app-name: echo-server-app

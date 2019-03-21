@@ -1,0 +1,28 @@
+### Storage ###
+
+kubectl create -f updater-with-empty-dir.yml
+kubectl port-forward updater-po 8888:80 --address=0.0.0.0
+curl localhost:8888
+
+kubectl create -f updater-with-host-path.yml
+kubectl port-forward updater-po 8888:80
+curl localhost:8888
+
+kubectl create -f persistent-volume.yml
+kubectl create -f persistent-volume-claim.yml
+kubectl create -f updater-with-persistent-volume.yml
+
+kubectl get persistentvolume
+kubectl get persistentvolumeclaims
+
+### Rook ###
+
+https://rook.github.io/docs/rook/v0.9/ceph-quickstart.html#deploy-the-rook-operator
+https://rook.github.io/docs/rook/v0.9/ceph-quickstart.html
+
+git clone https://github.com/rook/rook
+cd rook/cluster/examples/kubernetes/ceph/
+kubectl create -f operator.yaml
+kubectl create -f cluster.yaml
+kubectl create -f ceph-filesystem.yml
+kubectl -n rook-ceph get pod -l app=rook-ceph-mds

@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: echo-server-po
+spec:
+  containers:
+    - image: landrzejewski/echo-server:v1
+      name: echo-server
+      ports:
+        - containerPort: 8080

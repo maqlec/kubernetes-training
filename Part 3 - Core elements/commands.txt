@@ -1,0 +1,214 @@
+- get info about configuration elements
+
+kubectl explain pods
+kubectl explain pod.spec
+
+### Pods ###
+
+- create pod configuration
+
+kubectl create -f echo-server-pod.yaml
+
+- get info about pod (in yaml or json format)
+
+kubectl get po echo-server-po -o ymal
+kubectl describe echo-server-po
+
+- get logs from container
+
+kubectl logs echo-server-po [-c $CONTINER_NAME]
+
+- forward ports from container
+
+kubectl port-forward echo-server-po 8888:8080
+
+- execute command/process on container
+
+kubectl exec echo-server-po -- env
+
+### Labels ###
+
+- create pod configuration
+
+kubectl create -f echo-server-pod-with-labels.yml
+
+- get pods with labels
+
+kubectl get pods --show-labels
+
+- filter pods by labels
+
+kubectl get pods -l version
+kubectl get pods -l version=1
+kubectl get pods -l version!=1
+kubectl get pods -l '!version'
+kubectl get pods -l 'env in (production,development)'
+kubectl get pods -l 'env notin (production,development)'
+kubectl get pods -l 'env=production,version=2
+
+- add label to pod
+
+kubectl label pod echo-server-pod type=forntend
+
+- change pod label
+
+kubectl label pod echo-server-pod type=backend --overwrite
+
+- add label to node
+
+kubectl label node node1.k8s type=primary
+
+- get nodes with labels
+
+kubectl get nodes --show-labels
+
+- create pod with node selector
+
+kubectl create -f echo-server-pod-with-node-selector.yaml
+
+### Annotations ###
+
+- add annotation to pod
+
+kubectl annotate pod echo-server-pod training=true
+
+- show info about pod
+
+kubectl get pod echo-server-pod -o yaml
+
+### Namespaces ###
+
+- get namespaces
+
+kubectl get namespaces
+
+- get pods from namespace
+
+kubectl get pods --namespace=kube-system
+
+- create namespace
+
+kubectl create namespace training
+
+- delete namespace
+
+kubectl delete namespace training
+
+- create pod and namespace
+
+kubectl create -f echo-server-pod-with-namespace.yml
+
+### Cleaning ###
+
+- delete pod
+
+kubectl delete pod $POD_ID
+
+- delete pods with labels
+
+kubectl delete pod -l $LABEL=$VALUE
+
+- delete namespace
+
+kubectl delete namesapces $NAMESPACE_NAME
+
+- delete all pods from default namespace
+
+kubectl delete pods --all
+
+- delete all resources from default namespace
+
+kubectl delete all --all
+
+### Liveness probe ###
+
+- create pod with liveness probe
+
+kubectl create -f echo-server-pod-with-liveness-probe.yml
+
+- watch pods
+
+kubectl get pods -w
+
+- show old logs
+
+kubectl logs echo-server-pod --previous
+
+### ReplicationController ###
+
+kubectl create -f echo-server-replication-controller.yml
+kubectl get replicationcontrollers
+kubectl get pods -w
+kubectl scale replicationcontroller echo-server-rc --replicas=5
+kubectl edit replicationcontroller echo-server-rc  (export KUBE_EDITOR="/usr/bin/nano")
+kubectl delete replicationcontroller echo-server-rc --cascade=false
+
+### ReplicaSet ###
+
+kubectl create -f echo-server-replica-set.yml
+kubectl get replicasets
+kubectl get pods -w
+kubectl scale replicaset echo-server-rs --replicas=5
+kubectl edit replicaset echo-server-rs
+kubectl delete replicaset echo-server-rs
+
+### DaemonSet ###
+
+kubectl create -f status-monitor-daemon-set.yml
+kubectl get pods -o wide
+
+### Jobs ###
+
+kubectl create -f long-task-job.yml
+kubectl get jobs
+
+### CronJobs ###
+
+kubectl create -f long-task-cron-job.yml
+kubectl get cronjobs
+
+### Services ###
+
+kubectl create -f echo-server-replica-set.yml
+kubectl create -f echo-server-service.yml
+kubectl get services
+kubectl exec echo-server-rs-rrzw9 -- wget -qO- echo-service-svc
+kubectl exec echo-server-rs-rrzw9 -- wget -qO- echo-service-svc.default
+kubectl exec echo-server-rs-rrzw9 -- wget -qO- echo-service-svc.default.svc.cluster.local
+kubectl get endpoints
+kubectl exec echo-server-rs-rrzw9 -- env
+kubectl exec -it echo-server-rs-rrzw9 -- sh
+kubectl exec echo-server-rs-rrzw9 -- wget -qO- external-api-svc
+
+kubectl create -f echo-server-service-with-node-port.yml
+curl 192.168.1.11:30111
+
+### MetalLB ###
+
+kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.7.3/manifests/metallb.yaml
+kubectl create -f metallb-config.yml
+kubectl logs -l component=speaker -n metallb-system
+kubectl create -f metallb-service.yml
+kubectl get services
+curl http://192.168.1.240
+
+### Ingress ###
+
+https://kubernetes.github.io/ingress-nginx/deploy/#bare-metal
+
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/mandatory.yaml
+(Ustawić typ serwisu) kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/master/deploy/provider/baremetal/service-nodeport.yaml
+kubectl get pods --all-namespaces -l app.kubernetes.io/name=ingress-nginx --watch
+kubectl get service ingress-nginx --namespace=ingress-nginx
+
+### Dashboard ###
+
+kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+kubectl create serviceaccount cluster-admin-dashboard-sa
+kubectl create clusterrolebinding cluster-admin-dashboard-sa \
+  --clusterrole=cluster-admin \
+  --serviceaccount=default:cluster-admin-dashboard-sa
+kubectl get secret | grep cluster-admin-dashboard-sa
+kubectl describe secret $SECRET_NAME
+kubectl proxy --address=0.0.0.0 (add port forward host to admin)
+http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/.

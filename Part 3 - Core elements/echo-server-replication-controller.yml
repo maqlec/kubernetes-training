@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: echo-server-rc
+spec:
+  replicas: 3
+  selector:
+    app-name: echo-server-app
+  template:
+    metadata:
+      labels:
+        app-name: echo-server-app
+    spec:
+      containers:
+        - image: landrzejewski/echo-server-unhealthy:v1
+          name: echo-server
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /
+            initialDelaySeconds: 5
+            failureThreshold: 4
+            periodSeconds: 2

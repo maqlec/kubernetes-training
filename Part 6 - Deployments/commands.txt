@@ -1,0 +1,23 @@
+Rolling update (old way)
+
+View echo-server-replication-controller.yml
+while true;do curl -s http://192.168.1.11:30122;sleep 1; done;
+kubectl create -f echo-server-replication-controller.yml
+kubectl rolling-update echo-server-v1 echo-server-v2 --image=landrzejewski/echo-server-v2 --v 6
+
+Rollout
+
+kubectl create -f echo-server-deployment.yml --record
+kubectl rollout status deployment echo-server-d
+kubectl rollout history deployment echo-server-d
+
+kubectl create -f echo-server-service.yml
+while true;do curl -s http://192.168.1.242;sleep 1; done;
+
+kubectl set image deployment echo-server-d echo-server=landrzejewski/echo-server-unhealthy
+
+kubectl rollout undo deployment echo-server-d
+kubectl rollout undo deployment echo-server-d --to-revision=1
+kubectl rollout pause deployment echo-server-d
+kubectl rollout resume deployment echo-server-d
+kubectl rollout history deployment echo-server-d --revision=1

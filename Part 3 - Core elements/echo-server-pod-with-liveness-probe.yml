@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: echo-server-po
+spec:
+  containers:
+    - image: landrzejewski/echo-server-unhealthy:v1
+      name: echo-server
+      ports:
+        - containerPort: 8080
+      livenessProbe:
+        httpGet:
+          port: 8080
+          path: /
+        initialDelaySeconds: 5
+        failureThreshold: 4
+        periodSeconds: 2

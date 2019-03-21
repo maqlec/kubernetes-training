@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-server-d
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 2
+  replicas: 10
+  selector:
+    matchLabels:
+      app-name: echo-server-app
+  template:
+    metadata:
+      name: echo-server
+      labels:
+        app-name: echo-server-app
+    spec:
+      containers:
+        - name: echo-server
+          image: landrzejewski/echo-server:v1
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 1
+            failureThreshold: 1
+            successThreshold: 50
+            httpGet:
+              port: 8080
+              path: /
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-server-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app-name: echo-server-app
+  ports:
+    - port: 80
+      targetPort: 8080

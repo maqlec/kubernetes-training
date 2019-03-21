@@ -1,0 +1,39 @@
+- create pod configuration
+
+kubectl create -f echo-server-pod.yaml
+
+- get all pods
+
+kubectl get pods
+
+- delete pod
+
+kubectl delete pod echo-server-po
+
+- apply replication controller configuration
+
+kubectl apply -f echo-server-replication-controller.yaml
+
+- get all pods
+
+kubectl get pods
+
+- get all replication controllers
+
+kubectl get replicationcontrollers
+
+- delete pod
+
+kubectl delete pod echo-server-rc-xxxxxx
+
+- get all pods
+
+kubectl get pods
+
+- delete replication controller
+
+kubectl delete rc echo-server-rc
+
+- get all pods
+
+kubectl get pods

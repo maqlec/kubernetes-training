@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: status-monitor-ds
+spec:
+  selector:
+    #matchLabels:
+    #  app-name: status-monitor-app
+    matchExpressions:
+      - key: app-name
+        operator: In #(In, Notin, Exists)
+        values:
+          - status-monitor-app
+  template:
+    metadata:
+      labels:
+         app-name: status-monitor-app
+    spec:
+      containers:
+        - image: landrzejewski/status-monitor:v1
+          name: echo-server
+          ports:
+            - containerPort: 8080

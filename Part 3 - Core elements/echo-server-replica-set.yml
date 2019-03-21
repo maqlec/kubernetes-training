@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: echo-server-rs
+spec:
+  replicas: 3
+  selector:
+    #matchLabels:
+    #  app-name: echo-server-app
+    matchExpressions:
+      - key: app-name
+        operator: In #(In, Notin, Exists)
+        values:
+          - echo-server-app
+  template:
+    metadata:
+      labels:
+        app-name: echo-server-app
+    spec:
+      containers:
+        - image: landrzejewski/echo-server:v1
+          name: echo-server
+          ports:
+            - containerPort: 8080
+              name: http
+          livenessProbe:
+            httpGet:
+              port: 8080
+              path: /
+            initialDelaySeconds: 5
+            failureThreshold: 4
+            periodSeconds: 2

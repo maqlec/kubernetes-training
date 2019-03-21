@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: departments-config
+data:
+  POSTGRES_USER: admin
+  POSTGRES_PASSWORD: admin
+  POSTGRES_DB: departments
+  PGADMIN_DEFAULT_EMAIL: admin@postgres.pl
+  PGADMIN_DEFAULT_PASSWORD: admin
+  DB_HOST: "postgres-service"
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: departments-volume
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  flexVolume:
+    driver: ceph.rook.io/rook
+    fsType: ceph
+    options:
+      fsName: app-fs
+      clusterNamespace: rook-ceph
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: departments-volume
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app-name: postgres
+  template:
+    metadata:
+      name: postgres
+      labels:
+        app-name: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:11.1
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: departments-config
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: storage
+        - name: pgadmin
+          image: dpage/pgadmin4:4
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: departments-config
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: departments-volume
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app-name: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-admin
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30333
+  selector:
+    app-name: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: departments
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app-name: departments-app
+  template:
+    metadata:
+      labels:
+        app-name: departments-app
+    spec:
+      containers:
+        - name: departments
+          image: landrzejewski/departments-v2
+          env:
+            - name: DB_HOST
+              value: "postgres-service"
+          livenessProbe:
+            periodSeconds: 1
+            failureThreshold: 3
+            initialDelaySeconds: 600
+            httpGet:
+              port: 80
+              path: /swagger-ui.html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: departments-service
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app-name: departments-app
