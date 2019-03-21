@@ -186,9 +186,9 @@ curl 192.168.1.11:30111
 ### MetalLB ###
 
 kubectl apply -f https://raw.githubusercontent.com/google/metallb/v0.7.3/manifests/metallb.yaml
-kubectl create -f metallb-config.yml
+kubectl create -f metallb-config-map.yml
 kubectl logs -l component=speaker -n metallb-system
-kubectl create -f metallb-service.yml
+kubectl create -f echo-server-service-with-load-balancer.yml
 kubectl get services
 curl http://192.168.1.240
 

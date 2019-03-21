@@ -125,14 +125,24 @@ echo "source <(kubectl completion bash)" >> ~/.bashrc
 kubeadm reset
 journalctl -u kubelet --no-pager|less
 
+
+
+
+
+
+
+
+
+
+
 ### HA Cluster setup ###
 
-- Install updates and tools
+- install updates and tools
 
 sudo apt update
 sudo apt install vim net-tools
 
-- allow ssh for root
+- allow ssh login for root user
 
 vim /etc/ssh/sshd_config
 
@@ -140,22 +150,67 @@ PermitRootLogin yes
 
 /etc/init.d/ssh restart
 
-### etdc1/2 base config ###
+- install Docker on all nodes
 
-- Set static IP and host name
+apt -y install \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg2 \
+  software-properties-common
+
+curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
+
+apt-add-repository \
+  "deb [arch=amd64] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) \
+  stable"
+
+apt update && apt -y install docker-ce=18.06.3*
+
+apt-mark hold docker-ce
+
+- install Kubernetes on all nodes
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+
+cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+
+apt update && apt install -y kubelet kubeadm kubectl
+
+apt-mark hold kubelet kubeadm kubectl
+
+- turn off swap
+
+swapoff -a
+
+sed -i '/ swap / s/^/#/' /etc/fstab
+
+### set ip/host names config ###
+
+virtual cluster ip 192.168.1.10
+etcd1 192.168.1.11 + HAProxy
+etcd2 192.168.1.12 + HAProxy
+etcd3 192.168.1.13
+master1 192.168.1.14
+master2 192.168.1.15
+master3 192.168.1.16
+node1 192.168.1.17
+node2 192.168.1.18
 
 vim /etc/network/interfaces
 remove line: iface enp0s3 inet dhcp
-
-auto enp0s3:0  (on etdc1)
+add line: auto enp0s3:0  (on etdc1)
 
 vim /etc/network/interfaces.d/enp0s3
 iface enp0s3 inet static
-      address 192.168.1.11/12
+      address 192.168.1.11/12 ...
       netmask 255.255.255.0
       gateway 192.168.1.1
 
-(on etdc1)
+(on etcd1)
 iface enp0s3:0 inet static
       address 192.168.1.10
       netmask 255.255.255.0
@@ -164,7 +219,7 @@ iface enp0s3:0 inet static
 vim /etc/resolv.conf
 nameserver 192.168.1.1
 
-hostnamectl set-hostname etdc1/etdc2
+hostnamectl set-hostname etcd1/etcd2 ...
 vim /etc/hosts (rename host name)
 
 shutdown -r now
@@ -178,7 +233,7 @@ apt update && apt upgrade && apt install -y haproxy
 - Save original config and create new one
 
 mv /etc/haproxy/haproxy.cfg{,.back}
-vi /etc/haproxy/haproxy.cfg
+vim /etc/haproxy/haproxy.cfg
 
 global
     user haproxy
@@ -201,12 +256,13 @@ backend kubernetes-master-nodes
     option tcp-check
     server master1 192.168.1.14:6443 check fall 3 rise 2
     server master2 192.168.1.15:6443 check fall 3 rise 2
+    server master3 192.168.1.16:6443 check fall 3 rise 2
 
 - As you can see, both HAProxy services will use 192.168.1.10 shared IP address. This virtual IP will moved between servers,
   so we need to make some trick and enable net.ipv4.ip_nonlocal_bind sysctl option, to allow system services binding on the non local IP.
   Add to the file /etc/sysctl.conf this option:
 
-vi /etc/sysctl.conf
+vim /etc/sysctl.conf
 net.ipv4.ip_nonlocal_bind=1
 
 - Reload config
@@ -224,13 +280,13 @@ apt -y install heartbeat && systemctl enable heartbeat
 
 - create a /etc/ha.d/authkeys file first, in this file Heartbeat stored data for authenticating each other. File must be the same on both servers
 
-echo -n securepass | md5sum
-bb77d0d3b3f239fa5db73bdf27b8d29a
+echo -n kubesecret | md5sum
+160d774ae3facc28b6f558b8c8bf0950
 
-vi /etc/ha.d/authkeys
+vim /etc/ha.d/authkeys
 
 auth 1
-1 md5 bb77d0d3b3f239fa5db73bdf27b8d29a
+1 md5 160d774ae3facc28b6f558b8c8bf0950
 
 - set root rights
 
@@ -297,7 +353,7 @@ node    etcd2
 - At last we need to create the /etc/ha.d/haresources file on this servers. File be the same for both of them.
 In this file we declare our shared IP address and which node be the master by default:
 
-vi /etc/ha.d/haresources
+vim /etc/ha.d/haresources
 
 etcd1 192.168.1.11
 
@@ -306,50 +362,6 @@ etcd1 192.168.1.11
 systemctl restart heartbeat
 
 nc -v 192.168.1.10 6443 (on etdc1)
-
-- prepare rest of the nodes (set host names and ip addresses)
-
-etdc3 192.168.1.13
-master1 192.168.1.14
-master2 192.168.1.15
-node1 192.168.1.16
-node2 192.168.1.17
-
-- install docker on all nodes
-
-apt -y install \
-  apt-transport-https \
-  ca-certificates \
-  curl \
-  gnupg2 \
-  software-properties-common
-
-curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
-
-apt-add-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/debian \
-  $(lsb_release -cs) \
-  stable"
-
-apt update && apt -y install docker-ce
-
-- install kubernetes on all nodes
-
-curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb https://apt.kubernetes.io/ kubernetes-xenial main
-EOF
-
-apt update && apt install -y kubelet kubeadm kubectl
-
-apt-mark hold kubelet kubeadm kubectl
-
-- turn off swap
-
-swapoff -a
-
-sed -i '/ swap / s/^/#/' /etc/fstab
 
 - configure etcd (all etcd nodes)
 
@@ -361,7 +373,6 @@ Restart=always
 EOF
 
 systemctl daemon-reload
-
 systemctl restart kubelet
 
 - prepare certs on etcd1 node
@@ -441,7 +452,6 @@ kubeadm init phase certs apiserver-etcd-client --config=/tmp/${HOST0}/kubeadmcfg
 find /tmp/${HOST2} -name ca.key -type f -delete
 find /tmp/${HOST1} -name ca.key -type f -delete
 
-
 - copy certificates and kubeadm configs to the etcd2 and etcd3 nodes.
 
 scp -r /tmp/${HOST1}/* ${HOST1}:
@@ -466,9 +476,11 @@ docker run --rm -it \
 --ca-file /etc/kubernetes/pki/etcd/ca.crt \
 --endpoints https://192.168.1.11:2379 cluster-health
 
+
+
 - master nodes configuration
 
-form etdc1:
+from etdc1:
 
 scp /etc/kubernetes/pki/etcd/ca.crt 192.168.1.14:
 scp /etc/kubernetes/pki/apiserver-etcd-client.crt 192.168.1.14:
@@ -506,7 +518,11 @@ etcd:
 
 kubeadm init --config kubeadm-config.yaml
 
-- install netowk overlay
+ mkdir -p $HOME/.kube
+ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+- install network overlay
 
 kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 kubectl --kubeconfig /etc/kubernetes/admin.conf get pod -n kube-system -w
@@ -527,7 +543,18 @@ scp /etc/kubernetes/pki/apiserver-etcd-client.key @192.168.1.15:
 scp /etc/kubernetes/pki/etcd/ca.crt 192.168.1.15:etcd-ca.crt
 scp /etc/kubernetes/admin.conf 192.168.1.15:
 
-form master2:
+scp /etc/kubernetes/pki/ca.crt 192.168.1.16:
+scp /etc/kubernetes/pki/ca.key 192.168.1.16:
+scp /etc/kubernetes/pki/sa.key 192.168.1.16:
+scp /etc/kubernetes/pki/sa.pub 192.168.1.16:
+scp /etc/kubernetes/pki/front-proxy-ca.crt @192.168.1.16:
+scp /etc/kubernetes/pki/front-proxy-ca.key @192.168.1.16:
+scp /etc/kubernetes/pki/apiserver-etcd-client.crt @192.168.1.16:
+scp /etc/kubernetes/pki/apiserver-etcd-client.key @192.168.1.16:
+scp /etc/kubernetes/pki/etcd/ca.crt 192.168.1.16:etcd-ca.crt
+scp /etc/kubernetes/admin.conf 192.168.1.16:
+
+form master2/master3:
 
 mkdir -p /etc/kubernetes/pki/etcd
 mv /root/ca.crt /etc/kubernetes/pki/
@@ -543,11 +570,14 @@ mv /root/admin.conf /etc/kubernetes/admin.conf
 
 (add flag)
 
-kubeadm join 192.168.1.10:6443 --token j8nien.o04xl8lx8ww9bjxa --discovery-token-ca-cert-hash sha256:2f64ada616e17a7b7ecca9676dfdbd3d6a8ee80bfafc67a6b6c637cfdffc5052 --experimental-control-plane
+kubeadm join 192.168.1.10:6443 --token v89raz.qjcy8r9sczkipu4h --discovery-token-ca-cert-hash sha256:b7a49ab8cec6199cbe6bdb341ab6fe0c2569390ce1452e5c8a834d7ff33d2b53 --experimental-control-plane
 
 - add workers
 
-kubeadm join 192.168.1.10:6443 --token j8nien.o04xl8lx8ww9bjxa --discovery-token-ca-cert-hash sha256:2f64ada616e17a7b7ecca9676dfdbd3d6a8ee80bfafc67a6b6c637cfdffc5052
+kubeadm join 192.168.1.10:6443 --token v89raz.qjcy8r9sczkipu4h --discovery-token-ca-cert-hash sha256:b7a49ab8cec6199cbe6bdb341ab6fe0c2569390ce1452e5c8a834d7ff33d2b53
+
+
+
 
 
 - install kubectl on admin node
@@ -561,5 +591,5 @@ apt update && apt install -y kubectl
 
 mkdir ~/.kube
 
-scp 192.168.1.15:/etc/kubernetes/admin.conf ~/.kube/config
+scp -P 8011 root@localhost:/etc/kubernetes/admin.conf ~/.kube/local
 kubectl get nodes
