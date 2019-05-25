@@ -115,7 +115,7 @@ sudo kubeadm join 192.168.1.10:6443 --token 56svrn.bsemoumd4x25xrkc --discovery-
 
 - Configure admin machine
 
-mkdir ~/.kube/local
+mkdir ~/.kube
 scp root@192.168.1.10:/etc/kubernetes/admin.conf ~/.kube/local
 vim ~/.bash_profile (add export KUBECONFIG=~/.kube/local)
 sudo yum install bash-completion -y
